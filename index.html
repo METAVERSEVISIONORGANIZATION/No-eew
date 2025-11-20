@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣地震詳盡列表</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #fff;
+            --play: #2196f3;
+            --green: #388e3c;
+        }
+
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 60px auto 1fr;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: var(--card);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-left: 5px solid var(--green);
+            border-radius: 4px;
+        }
+
+        .system-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+        }
+
+        .time-now {
+            font-size: 1.2rem;
+            font-family: 'Roboto Mono';
+        }
+
+        .control-bar {
+            grid-column: 1 / -1;
+            background: #2a2a2a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 8px 15px;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        select {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 5px 10px;
+            font-size: 1rem;
+            border-radius: 4px;
+            flex-grow: 1;
+        }
+
+        button {
+            background: var(--play);
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            font-size: .95rem;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .main-card {
+            position: relative;
+            background: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .timer-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-family: 'Roboto Mono';
+            font-size: 2.5rem;
+            color: #555;
+            font-weight: 700;
+            background: #2a2a2a;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        .timer-active { color: #f44336; }
+
+        .location-big {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #ffeb3b;
+            margin-top: 20px;
+        }
+
+        .params-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px 10px;
+            margin-bottom: 50px;
+            padding-top: 10px;
+            border-top: 1px dashed #333;
+        }
+
+        .param-value { font-weight: 700; }
+        .label-small { color: #aaa; font-size: .8rem; }
+
+        .my-location {
+            grid-column: 1 / -1;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .list-panel {
+            grid-row: 3;
+            background: var(--card);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #333;
+            overflow: hidden;
+            min-height: 300px;
+        }
+
+        #stationList {
+            overflow-y: auto;
+            padding: 5px 0;
+        }
+
+        .station-row {
+            display: flex;
+            align-items: center;
+            padding: 8px 15px;
+            border-bottom: 1px solid #333;
+            justify-content: space-between;
+        }
+
+        .station-row .st-info {
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+
+        .st-name { font-weight: 700; font-size: 1.1rem; }
+        .st-detail { font-size: .8rem; color: #ccc; }
+
+        .st-dist {
+            font-family: 'Roboto Mono';
+            font-size: 1rem;
+            color: #aaa;
+        }
+
+        .intensity-box {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .bg-0 { background: #444; color: #aaa; }
+        .bg-1 { background: #388e3c; }
+        .bg-2 { background: #fbc02d; color: #000; }
+        .bg-3 { background: #f57c00; }
+        .bg-4 { background: #e64a19; }
+        .bg-5- { background: #d32f2f; }
+        .bg-5\+ { background: #b71c1c; border: 2px solid #ff8a80; }
+        .bg-6- { background: #5d4037; }
+        .bg-6\+ { background: #3e2723; border: 2px solid #a1887f; }
+        .bg-7 { background: #880e4f; border: 2px solid #f48fb1; }
+    </style>
+</head>
+
+<body>
+<div class="dashboard">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="system-title">CWA 地震詳細列表系統</div>
+        <div class="time-now" id="clock">00:00:00</div>
+    </div>
+
+    <!-- CONTROL BAR -->
+    <div class="control-bar">
+        <div class="control-bar-label">選擇地震事件：</div>
+        <select id="eqSelect">
+            <option value="">載入中...</option>
+        </select>
+        <button id="btnPlay" onclick="startReplay()">▶ 回放模擬</button>
+    </div>
+
+    <!-- MAIN CARD -->
+    <div class="main-card">
+        <div class="timer-overlay" id="replayTimer">T+ 00s</div>
+
+        <div class="label-small">震央位置 (Epicenter)</div>
+        <div class="location-big" id="eqLocation">---</div>
+        <div class="time-ago" id="eqTime">---</div>
+
+        <div class="params-grid">
+            <div class="param-box">
+                <div class="label-small">規模 (Mag)</div>
+                <div class="param-value val-mag" id="eqMag">--</div>
+            </div>
+            <div class="param-box">
+                <div class="label-small">深度 (Depth)</div>
+                <div class="param-value val-depth" id="eqDepth">-- km</div>
+            </div>
+            <div class="param-box">
+                <div class="label-small">影響縣市數量</div>
+                <div class="param-value" id="stationCount">--</div>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            <div class="param-box">
+                <div class="label-small">震央經度 (Lon)</div>
+                <div class="param-value" id="eqLon">--</div>
+            </div>
+
+            <div class="param-box">
+                <div class="label-small">震央緯度 (Lat)</div>
+                <div class="param-value" id="eqLat">--</div>
+            </div>
+
+            <div class="param-box">
+                <div class="label-small">最近觀測站</div>
+                <div class="param-value" id="stationMax">--</div>
+            </div>
+
+            <div class="my-location">
+                <div class="label-small" style="font-weight:bold;">📍 您的當前位置 (My Location)</div>
+
+                <div class="param-box" style="margin-top:5px;">
+                    <div class="label-small">經緯度</div>
+                    <div class="param-value" id="myCoords">--</div>
+                </div>
+
+                <div class="param-box">
+                    <div class="label-small">距震央距離</div>
+                    <div class="param-value" id="myDistance">-- km</div>
+                </div>
+
+                <div class="param-box">
+                    <div class="label-small">估計抵達時間 (T+)</div>
+                    <div class="param-value" id="myArrivalTime">-- s</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATION LIST PANEL -->
+    <div class="list-panel">
+        <div style="padding:10px;font-weight:700;border-bottom:1px solid #333;background:#2a2a2a;">
+            📊 震度抵達列表 (回放順序)
+        </div>
+        <div id="stationList" style="height:100%;">
+            <div style="padding:20px;text-align:center;color:#666;">
+                請選擇地震並點擊回放
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- SCRIPT -->
+<script>
+    const CWA_KEY = 'CWA-B9A1CD2B-C02D-4513-BBF0-540B3C469F06';
+    const API_URL = `https://opendata.cwa.gov.tw/api/v1/rest/datastore/E-A0015-001?Authorization=${CWA_KEY}&limit=15&format=JSON`;
+
+    const COUNTY_COORDS = {
+        "臺北市": [25.03, 121.56], "基隆市": [25.13, 121.74],
+        "新北市": [25.01, 121.46], "宜蘭縣": [24.75, 121.75],
+        "桃園市": [24.99, 121.3],  "新竹市": [24.8, 120.96],
+        "新竹縣": [24.84, 121.01], "苗栗縣": [24.56, 120.82],
+        "臺中市": [24.15, 120.66], "彰化縣": [24.08, 120.54],
+        "南投縣": [23.9, 120.68],  "雲林縣": [23.7, 120.43],
+        "嘉義市": [23.48, 120.44], "嘉義縣": [23.45, 120.25],
+        "臺南市": [23, 120.22],    "高雄市": [22.62, 120.31],
+        "屏東縣": [22.67, 120.48], "臺東縣": [22.75, 121.14],
+        "花蓮縣": [23.99, 121.6],  "澎湖縣": [23.57, 119.56],
+        "金門縣": [24.44, 118.32], "連江縣": [26.15, 119.95]
+    };
+
+    let earthquakeList = [];
+    let replayInterval = null;
+    let isReplaying = false;
+    let userLocation = null;
+
+    const elClock = document.getElementById('clock');
+    const elSelect = document.getElementById('eqSelect');
+    const elTimer = document.getElementById('replayTimer');
+    const elList = document.getElementById('stationList');
+    const btnPlay = document.getElementById('btnPlay');
+    const elCount = document.getElementById('stationCount');
+    const elEqLon = document.getElementById('eqLon');
+    const elEqLat = document.getElementById('eqLat');
+    const elStationMax = document.getElementById('stationMax');
+    const elMyCoords = document.getElementById('myCoords');
+    const elMyDistance = document.getElementById('myDistance');
+    const elMyArrivalTime = document.getElementById('myArrivalTime');
+
+    setInterval(() => {
+        elClock.innerText = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+    }, 1000);
+
+    fetch(API_URL)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success === "true") {
+                earthquakeList = data.records.Earthquake;
+                initSelectMenu();
+                getUserLocation();
+            } else {
+                elSelect.innerHTML = `<option value="">載入失敗</option>`;
+                document.getElementById('eqLocation').innerText = "數據載入失敗 (API錯誤)";
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            elSelect.innerHTML = `<option value="">連線錯誤</option>`;
+            document.getElementById('eqLocation').innerText = "連線錯誤 (請在 HTTPS 環境運行)";
+        });
+
+    function getUserLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+                    elMyCoords.innerText = `${userLocation.lat.toFixed(4)}, ${userLocation.lon.toFixed(4)}`;
+                    if (earthquakeList.length > 0) {
+                        loadEarthquakeInfo(elSelect.value);
+                    }
+                },
+                (error) => {
+                    console.warn(`Geolocation error: ${error.code}: ${error.message}`);
+                    elMyCoords.innerText = '定位失敗或被拒絕 (請授權)';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+        } else {
+            elMyCoords.innerText = '瀏覽器不支援地理定位';
+        }
+    }
+
+    function calculateMyLocationInfo(eqInfo) {
+        if (!userLocation) {
+            elMyDistance.innerText = '-- km';
+            elMyArrivalTime.innerText = '-- s';
+            return;
+        }
+
+        const epLat = eqInfo.Epicenter.EpicenterLatitude;
+        const epLon = eqInfo.Epicenter.EpicenterLongitude;
+        const focalDepth = eqInfo.FocalDepth;
+
+        const dist = getDistance(epLat, epLon, userLocation.lat, userLocation.lon);
+        elMyDistance.innerText = `${dist.toFixed(1)} km`;
+
+        const hypocentralDist = Math.sqrt(dist ** 2 + focalDepth ** 2);
+        const arrivalTime = hypocentralDist / 3.5;
+        elMyArrivalTime.innerText = `${arrivalTime.toFixed(1)} s`;
+    }
+
+    function initSelectMenu() {
+        elSelect.innerHTML = '';
+
+        earthquakeList.forEach((eq, index) => {
+            const info = eq.EarthquakeInfo;
+            const time = new Date(info.OriginTime).toLocaleString('zh-TW', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const loc = info.Epicenter.Location;
+            const mag = info.EarthquakeMagnitude.MagnitudeValue;
+
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.text = `[${time}] M${mag} - ${loc}`;
+            elSelect.appendChild(opt);
+        });
+
+        if (earthquakeList.length > 0) {
+            elSelect.selectedIndex = 0;
+            loadEarthquakeInfo(0);
+        }
+    }
+
+    elSelect.addEventListener('change', e => {
+        stopReplay();
+        loadEarthquakeInfo(e.target.value);
+    });
+
+    function loadEarthquakeInfo(index) {
+        const eq = earthquakeList[index];
+        if (!eq) return;
+
+        const info = eq.EarthquakeInfo;
+        const intensity = eq.Intensity;
+
+        document.getElementById('eqLocation').innerText = info.Epicenter.Location;
+        document.getElementById('eqMag').innerText = info.EarthquakeMagnitude.MagnitudeValue;
+        document.getElementById('eqDepth').innerText = info.FocalDepth + " km";
+
+        elEqLon.innerText = info.Epicenter.EpicenterLongitude;
+        elEqLat.innerText = info.Epicenter.EpicenterLatitude;
+
+        const eqDate = new Date(info.OriginTime);
+        document.getElementById('eqTime').innerText = `發生時間: ${eqDate.toLocaleString('zh-TW')}`;
+
+        elList.innerHTML = `<div style="padding:20px;text-align:center;color:#666;">選擇事件後，點擊「回放模擬」開始觀測</div>`;
+        elTimer.innerText = "T+ 00s";
+        elTimer.classList.remove('timer-active');
+        elCount.innerText = `${intensity.ShakingArea.length} 區域`;
+
+        if (intensity.MaxDegree) {
+            elStationMax.innerText = `${intensity.MaxDegree.StationName} (${intensity.MaxDegree.StationInt})`;
+        } else {
+            elStationMax.innerText = '--';
+        }
+
+        calculateMyLocationInfo(info);
+    }
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) *
+            Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) ** 2;
+
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function startReplay() {
+        if (isReplaying) return;
+
+        alert("回放模擬開始！");
+
+        const index = elSelect.value;
+        const eq = earthquakeList[index];
+        const info = eq.EarthquakeInfo;
+
+        const epLat = info.Epicenter.EpicenterLatitude;
+        const epLon = info.Epicenter.EpicenterLongitude;
+
+        let stationData = [];
+
+        eq.Intensity.ShakingArea.forEach(area => {
+            const coords = COUNTY_COORDS[area.AreaDesc] || COUNTY_COORDS[area.AreaDesc.substring(0, 3)];
+            if (!coords) return;
+
+            const dist = getDistance(epLat, epLon, coords[0], coords[1]);
+            const hypocentralDist = Math.sqrt(dist ** 2 + info.FocalDepth ** 2);
+            const arrivalTime = hypocentralDist / 3.5;
+
+            const station = area.StationList && area.StationList.length > 0
+                ? area.StationList[0]
+                : null;
+
+            stationData.push({
+                name: area.AreaDesc,
+                intensity: parseGrade(area.AreaIntensity),
+                stationName: station ? station.StationName : '(無細部站點)',
+                stationPGA: station ? station.StationPGA : '--',
+                coords: coords,
+                dist: dist.toFixed(0),
+                time: arrivalTime
+            });
+        });
+
+        stationData.sort((a, b) => a.time - b.time);
+
+        isReplaying = true;
+        btnPlay.disabled = true;
+        elSelect.disabled = true;
+        elList.innerHTML = '';
+        elTimer.classList.add('timer-active');
+
+        let currentTime = 0;
+        const REPLAY_SPEED = 4;
+
+        replayInterval = setInterval(() => {
+            currentTime += .1 * REPLAY_SPEED;
+            elTimer.innerText = `T+ ${currentTime.toFixed(1)}s`;
+
+            const arrivedStations = stationData.filter(
+                st => !st.displayed && st.time <= currentTime
+            );
+
+            arrivedStations.forEach(st => {
+                st.displayed = true;
+                addStationRow(st);
+            });
+
+            const lastStationTime = stationData.length > 0
+                ? stationData[stationData.length - 1].time
+                : 0;
+
+            if (stationData.every(st => st.displayed) && currentTime > lastStationTime + 2) {
+                stopReplay();
+            }
+
+        }, 100);
+    }
+
+    function stopReplay() {
+        if (!isReplaying) return;
+
+        clearInterval(replayInterval);
+        isReplaying = false;
+
+        btnPlay.disabled = false;
+        elSelect.disabled = false;
+        elTimer.classList.remove('timer-active');
+
+        alert("回放模擬結束！");
+    }
+
+    function addStationRow(st) {
+        const cssClass = getGradeClass(st.intensity);
+
+        const div = document.createElement('div');
+        div.className = 'station-row';
+
+        div.innerHTML = `
+            <div class="intensity-box ${cssClass}">${st.intensity}</div>
+            <div class="st-info">
+                <div class="st-name">${st.name} (震度 ${st.intensity})</div>
+                <div class="st-detail">
+                    T+${st.time.toFixed(1)}s 抵達, 站名: ${st.stationName} (PGA: ${st.stationPGA} gal)
+                </div>
+            </div>
+            <div class="st-dist">${st.dist}km</div>
+        `;
+
+        elList.appendChild(div);
+        elList.scrollTop = elList.scrollHeight;
+    }
+
+    function parseGrade(text) {
+        let g = text.replace("級", "");
+        if (g === "5弱") return "5-";
+        if (g === "5強") return "5+";
+        if (g === "6弱") return "6-";
+        if (g === "6強") return "6+";
+        return g;
+    }
+
+    function getGradeClass(grade) {
+        if (grade === "5-") return "bg-5-";
+        if (grade === "5+") return "bg-5+";
+        if (grade === "6-") return "bg-6-";
+        if (grade === "6+") return "bg-6+";
+        if (grade === "7") return "bg-7";
+        return "bg-" + grade;
+    }
+</script>
+
+</body>
+</html>
